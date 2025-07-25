@@ -4,8 +4,8 @@ Fork changes
 ============
 
 - buffer name now includes the git commits relative time to now
-- revision message is now nicely shown in a floating window
-- new revision picker using fzf-lua to quickly jump to any revision
+- revision message (``Ctrl-m``) is now nicely shown in a floating window
+- new revision picker (``Ctrl-c``) using fzf-lua to quickly jump to any revision
 
 Original README
 ===============
