@@ -156,16 +156,30 @@ function M.Session:show_revision_picker()
     -- Format entries for fzf
     local entries = {}
     local hash_to_index = {}
+    local current_revision_index = 1
+    
+    -- Get current revision hash to highlight it in the picker
+    local current_hash = self.log[self.curret_buffer_index] or self.log[1]
     
     for i, rev in ipairs(revisions) do
         local entry = string.format("%-8s %-15s %s", rev.hash, rev.relative_time, rev.summary)
         table.insert(entries, entry)
         hash_to_index[rev.hash] = i
+        
+        -- Track which entry corresponds to current revision
+        if rev.hash == current_hash then
+            current_revision_index = i
+        end
     end
     
     -- Show fzf picker
     fzf.fzf_exec(entries, {
         prompt = 'Revisions> ',
+        fzf_opts = {
+            ['--layout'] = 'reverse-list',
+            ['--info'] = 'inline',
+            ['--with-nth'] = '1..',
+        },
         preview = function(selected)
             if not selected or #selected == 0 then
                 return ''
@@ -216,7 +230,26 @@ function M.Session:show_revision_picker()
                 layout = 'vertical',
                 vertical = 'up:50%'
             }
-        }
+        },
+        -- Start with current revision selected by reordering entries
+        fzf_fn = function()
+            -- Reorder entries so current revision is first (will be selected by default)
+            local reordered = {}
+            
+            -- Add current revision first
+            if entries[current_revision_index] then
+                table.insert(reordered, entries[current_revision_index])
+            end
+            
+            -- Add all other entries
+            for i, entry in ipairs(entries) do
+                if i ~= current_revision_index then
+                    table.insert(reordered, entry)
+                end
+            end
+            
+            return reordered
+        end
     })
 end
 
