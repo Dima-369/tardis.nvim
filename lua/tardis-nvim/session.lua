@@ -38,8 +38,8 @@ function M.Session:create_buffer(index)
     local total_revisions = #self.log
     local filename = vim.fn.fnamemodify(self.filename, ':t') -- Get just the filename without path
     local buffer_name = short_time ~= '' and 
-        string.format('%s, %s %d|%d %s', filename, revision, index, total_revisions, short_time) or
-        string.format('%s, %s %d|%d', filename, revision, index, total_revisions)
+        string.format('%s (%s %d|%d %s)', filename, revision, index, total_revisions, short_time) or
+        string.format('%s (%s %d|%d)', filename, revision, index, total_revisions)
     vim.api.nvim_buf_set_name(fd, buffer_name)
 
     local keymap = self.parent.config.keymap
