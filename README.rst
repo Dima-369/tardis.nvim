@@ -3,7 +3,8 @@
 Fork changes
 ============
 
-- the buffer name now includes the git commits relative time to now
+- buffer name now includes the git commits relative time to now
+- revision message is now nicely shown in a floating window
 
 Original README
 ===============
