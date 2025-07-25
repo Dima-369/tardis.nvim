@@ -35,9 +35,10 @@ function M.Session:create_buffer(index)
     vim.api.nvim_set_option_value('filetype', self.filetype, { buf = fd })
     vim.api.nvim_set_option_value('readonly', true, { buf = fd })
     local relative_time = self.adapter.get_revision_relative_time and self.adapter.get_revision_relative_time(revision, self) or ''
+    local total_revisions = #self.log
     local buffer_name = relative_time ~= '' and 
-        string.format('%s (%s - %s)', self.filename, revision, relative_time) or
-        string.format('%s (%s)', self.filename, revision)
+        string.format('%s [%d/%d] (%s - %s)', self.filename, index, total_revisions, revision, relative_time) or
+        string.format('%s [%d/%d] (%s)', self.filename, index, total_revisions, revision)
     vim.api.nvim_buf_set_name(fd, buffer_name)
 
     local keymap = self.parent.config.keymap
@@ -155,10 +156,9 @@ function M.Session:show_revision_picker()
     
     -- Format entries for fzf
     local entries = {}
-    local total_revisions = #revisions
     
     for i, rev in ipairs(revisions) do
-        local entry = string.format("[%d/%d] %-8s %-15s %s", i, total_revisions, rev.hash, rev.relative_time, rev.summary)
+        local entry = string.format("%-8s %-15s %s", rev.hash, rev.relative_time, rev.summary)
         table.insert(entries, entry)
     end
     
