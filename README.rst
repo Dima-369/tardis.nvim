@@ -1,5 +1,13 @@
 .. image:: ./assets/tardis.webp
 
+Fork changes
+============
+
+- the buffer name now includes the git commits relative time to now
+
+Original README
+===============
+
 Tardis allows you to travel in time (git history) scrolling through each
 revision of your current file.
 

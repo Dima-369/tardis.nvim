@@ -62,4 +62,13 @@ function M.get_revision_info(revision, parent)
     return git(root, 'show', '--compact-summary', revision)
 end
 
+---@param revision string
+---@param parent TardisSession
+---@return string
+function M.get_revision_relative_time(revision, parent)
+    local root = util.dirname(parent.path)
+    local result = git(root, 'show', '--pretty=format:%cr', '--no-patch', revision)
+    return result[1] or ''
+end
+
 return M

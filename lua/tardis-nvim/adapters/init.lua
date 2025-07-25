@@ -6,6 +6,7 @@ local M = {}
 --- Optional fields
 ---@field get_revision_info? fun(revision: string, parent: TardisSession?): string[]
 ---@field get_revision_under_cursor? fun(parent: TardisSession?): string
+---@field get_revision_relative_time? fun(revision: string, parent: TardisSession?): string
 
 ---@param type string?
 ---@return TardisAdapter?
