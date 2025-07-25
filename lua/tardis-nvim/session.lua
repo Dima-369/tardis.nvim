@@ -172,16 +172,32 @@ function M.Session:show_revision_picker()
         end
     end
     
+    -- Reorder entries to put current revision first, but keep track of original order
+    local ordered_entries = {}
+    local index_map = {}
+    
+    -- Add current revision first
+    table.insert(ordered_entries, entries[current_revision_index])
+    index_map[1] = current_revision_index
+    
+    -- Add all others
+    local pos = 2
+    for i, entry in ipairs(entries) do
+        if i ~= current_revision_index then
+            table.insert(ordered_entries, entry)
+            index_map[pos] = i
+            pos = pos + 1
+        end
+    end
+    
     -- Show fzf picker
-    fzf.fzf_exec(entries, {
-        prompt = 'Revisions> ',
+    local opts = {
+        prompt = 'Revisions (current first)> ',
         fzf_opts = {
             ['--layout'] = 'reverse-list',
             ['--info'] = 'inline',
             ['--with-nth'] = '1..',
         },
-        -- Set default selection to current revision
-        default = entries[current_revision_index],
         preview = function(selected)
             if not selected or #selected == 0 then
                 return ''
@@ -209,12 +225,24 @@ function M.Session:show_revision_picker()
                     return
                 end
                 
-                -- Find the index of this revision in our log
-                local target_index = nil
-                for i, log_hash in ipairs(self.log) do
-                    if log_hash == hash then
-                        target_index = i
+                -- Find the index of this revision in our log using the mapping
+                local selected_pos = nil
+                for pos, entry in ipairs(ordered_entries) do
+                    if entry == selected[1] then
+                        selected_pos = pos
                         break
+                    end
+                end
+                
+                local original_index = selected_pos and index_map[selected_pos]
+                local target_index = nil
+                if original_index then
+                    local rev_hash = revisions[original_index].hash
+                    for i, log_hash in ipairs(self.log) do
+                        if log_hash == rev_hash then
+                            target_index = i
+                            break
+                        end
                     end
                 end
                 
@@ -233,7 +261,9 @@ function M.Session:show_revision_picker()
                 vertical = 'up:50%'
             }
         }
-    })
+    }
+    
+    fzf.fzf_exec(ordered_entries, opts)
 end
 
 ---@param parent TardisSessionManager
