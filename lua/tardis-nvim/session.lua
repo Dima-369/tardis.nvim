@@ -172,27 +172,10 @@ function M.Session:show_revision_picker()
         end
     end
     
-    -- Reorder entries to put current revision first, but keep track of original order
-    local ordered_entries = {}
-    local index_map = {}
-    
-    -- Add current revision first
-    table.insert(ordered_entries, entries[current_revision_index])
-    index_map[1] = current_revision_index
-    
-    -- Add all others
-    local pos = 2
-    for i, entry in ipairs(entries) do
-        if i ~= current_revision_index then
-            table.insert(ordered_entries, entry)
-            index_map[pos] = i
-            pos = pos + 1
-        end
-    end
-    
     -- Show fzf picker
     local opts = {
-        prompt = 'Revisions (current first)> ',
+        prompt = 'Revisions> ',
+        query = current_hash, -- Set initial query to current revision hash
         fzf_opts = {
             ['--layout'] = 'reverse-list',
             ['--info'] = 'inline',
@@ -225,24 +208,12 @@ function M.Session:show_revision_picker()
                     return
                 end
                 
-                -- Find the index of this revision in our log using the mapping
-                local selected_pos = nil
-                for pos, entry in ipairs(ordered_entries) do
-                    if entry == selected[1] then
-                        selected_pos = pos
-                        break
-                    end
-                end
-                
-                local original_index = selected_pos and index_map[selected_pos]
+                -- Find the index of this revision in our log
                 local target_index = nil
-                if original_index then
-                    local rev_hash = revisions[original_index].hash
-                    for i, log_hash in ipairs(self.log) do
-                        if log_hash == rev_hash then
-                            target_index = i
-                            break
-                        end
+                for i, log_hash in ipairs(self.log) do
+                    if log_hash == hash then
+                        target_index = i
+                        break
                     end
                 end
                 
@@ -263,7 +234,7 @@ function M.Session:show_revision_picker()
         }
     }
     
-    fzf.fzf_exec(ordered_entries, opts)
+    fzf.fzf_exec(entries, opts)
 end
 
 ---@param parent TardisSessionManager
