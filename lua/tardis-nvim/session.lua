@@ -180,6 +180,8 @@ function M.Session:show_revision_picker()
             ['--info'] = 'inline',
             ['--with-nth'] = '1..',
         },
+        -- Set default selection to current revision
+        default = entries[current_revision_index],
         preview = function(selected)
             if not selected or #selected == 0 then
                 return ''
@@ -230,26 +232,7 @@ function M.Session:show_revision_picker()
                 layout = 'vertical',
                 vertical = 'up:50%'
             }
-        },
-        -- Start with current revision selected by reordering entries
-        fzf_fn = function()
-            -- Reorder entries so current revision is first (will be selected by default)
-            local reordered = {}
-            
-            -- Add current revision first
-            if entries[current_revision_index] then
-                table.insert(reordered, entries[current_revision_index])
-            end
-            
-            -- Add all other entries
-            for i, entry in ipairs(entries) do
-                if i ~= current_revision_index then
-                    table.insert(reordered, entry)
-                end
-            end
-            
-            return reordered
-        end
+        }
     })
 end
 
