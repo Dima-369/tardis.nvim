@@ -66,23 +66,66 @@ function M.Session:create_info_buffer(revision)
         vim.notify('revision_message was empty')
         return
     end
+    
+    -- Create buffer for the revision info
     local fd = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(fd, 0, -1, false, message)
-    -- TODO: use appropriate filetype
-    vim.api.nvim_set_option_value('filetype', 'gitrevision', { buf = fd })
+    vim.api.nvim_set_option_value('filetype', 'gitcommit', { buf = fd })
     vim.api.nvim_set_option_value('readonly', true, { buf = fd })
-
-    local current_ui = vim.api.nvim_list_uis()[1]
-    if not current_ui then
-        error('no ui found')
+    vim.api.nvim_set_option_value('modifiable', false, { buf = fd })
+    
+    -- Calculate window dimensions
+    local editor_width = vim.o.columns
+    local editor_height = vim.o.lines
+    
+    -- Calculate content dimensions
+    local content_width = 0
+    for _, line in ipairs(message) do
+        content_width = math.max(content_width, vim.fn.strdisplaywidth(line))
     end
-    vim.api.nvim_open_win(fd, false, {
-        relative = 'win',
-        anchor = 'NE',
-        width = 100,
-        height = #message,
-        row = 0,
-        col = current_ui.width,
+    
+    -- Set window dimensions with reasonable limits
+    local win_width = math.min(content_width + 4, math.floor(editor_width * 0.8))
+    local win_height = math.min(#message + 2, math.floor(editor_height * 0.6))
+    
+    -- Center the window
+    local row = math.floor((editor_height - win_height) / 2)
+    local col = math.floor((editor_width - win_width) / 2)
+    
+    -- Create floating window
+    local win_id = vim.api.nvim_open_win(fd, true, {
+        relative = 'editor',
+        width = win_width,
+        height = win_height,
+        row = row,
+        col = col,
+        style = 'minimal',
+        border = 'rounded',
+        title = string.format(' Revision %s ', revision),
+        title_pos = 'center',
+    })
+    
+    -- Set window options
+    vim.api.nvim_set_option_value('wrap', true, { win = win_id })
+    vim.api.nvim_set_option_value('linebreak', true, { win = win_id })
+    vim.api.nvim_set_option_value('breakindent', true, { win = win_id })
+    
+    -- Add keymaps to close the window
+    local close_win = function()
+        if vim.api.nvim_win_is_valid(win_id) then
+            vim.api.nvim_win_close(win_id, true)
+        end
+    end
+    
+    vim.keymap.set('n', 'q', close_win, { buffer = fd, desc = 'Close revision info' })
+    vim.keymap.set('n', '<Esc>', close_win, { buffer = fd, desc = 'Close revision info' })
+    vim.keymap.set('n', '<CR>', close_win, { buffer = fd, desc = 'Close revision info' })
+    
+    -- Auto-close when leaving the window
+    vim.api.nvim_create_autocmd({ 'BufLeave', 'WinLeave' }, {
+        buffer = fd,
+        once = true,
+        callback = close_win,
     })
 end
 
