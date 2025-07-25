@@ -23,6 +23,7 @@ local function get_default_config()
             ['quit'] = 'q',
             ['revision_message'] = '<C-m>',
             ['commit'] = '<C-g>',
+            ['revision_picker'] = '<C-p>',
         },
         settings = {
             max_revisions = 256,

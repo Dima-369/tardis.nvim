@@ -56,6 +56,9 @@ function M.Session:create_buffer(index)
     vim.keymap.set('n', keymap.commit, function()
         self:commit_to_origin()
     end, { buffer = fd, desc = 'Replace origin buffer with this tardis buffer' })
+    vim.keymap.set('n', keymap.revision_picker, function()
+        self:show_revision_picker()
+    end, { buffer = fd, desc = 'Show revision picker' })
 
     return buffer.Buffer:new(fd)
 end
@@ -126,6 +129,94 @@ function M.Session:create_info_buffer(revision)
         buffer = fd,
         once = true,
         callback = close_win,
+    })
+end
+
+function M.Session:show_revision_picker()
+    -- Check if fzf-lua is available
+    local ok, fzf = pcall(require, 'fzf-lua')
+    if not ok then
+        vim.notify('fzf-lua is required for revision picker', vim.log.levels.ERROR)
+        return
+    end
+    
+    -- Check if adapter supports detailed revisions
+    if not self.adapter.get_revisions_with_details then
+        vim.notify('Revision picker not supported by current adapter', vim.log.levels.WARN)
+        return
+    end
+    
+    -- Get revisions with details
+    local revisions = self.adapter.get_revisions_with_details(self)
+    if vim.tbl_isempty(revisions) then
+        vim.notify('No revisions found', vim.log.levels.WARN)
+        return
+    end
+    
+    -- Format entries for fzf
+    local entries = {}
+    local hash_to_index = {}
+    
+    for i, rev in ipairs(revisions) do
+        local entry = string.format("%-8s %-15s %s", rev.hash, rev.relative_time, rev.summary)
+        table.insert(entries, entry)
+        hash_to_index[rev.hash] = i
+    end
+    
+    -- Show fzf picker
+    fzf.fzf_exec(entries, {
+        prompt = 'Revisions> ',
+        preview = function(selected)
+            if not selected or #selected == 0 then
+                return ''
+            end
+            
+            -- Extract hash from the selected line
+            local hash = vim.split(selected[1], ' ', { plain = true })[1]
+            if not hash then
+                return ''
+            end
+            
+            -- Get revision info for preview
+            local info = self.adapter.get_revision_info and self.adapter.get_revision_info(hash, self) or {}
+            return table.concat(info, '\n')
+        end,
+        actions = {
+            ['default'] = function(selected)
+                if not selected or #selected == 0 then
+                    return
+                end
+                
+                -- Extract hash from the selected line
+                local hash = vim.split(selected[1], ' ', { plain = true })[1]
+                if not hash then
+                    return
+                end
+                
+                -- Find the index of this revision in our log
+                local target_index = nil
+                for i, log_hash in ipairs(self.log) do
+                    if log_hash == hash then
+                        target_index = i
+                        break
+                    end
+                end
+                
+                if target_index then
+                    self:goto_buffer(target_index)
+                else
+                    vim.notify('Selected revision not found in current session', vim.log.levels.WARN)
+                end
+            end
+        },
+        winopts = {
+            height = 0.6,
+            width = 0.8,
+            preview = {
+                layout = 'vertical',
+                vertical = 'up:50%'
+            }
+        }
     })
 end
 

@@ -5,6 +5,7 @@ Fork changes
 
 - buffer name now includes the git commits relative time to now
 - revision message is now nicely shown in a floating window
+- new revision picker using fzf-lua to quickly jump to any revision
 
 Original README
 ===============
@@ -40,6 +41,7 @@ The default options are
             ["quit"] = 'q',                 -- quit all
             ["revision_message"] = '<C-m>', -- show revision message for current revision
             ["commit"] = '<C-g>',           -- replace contents of origin buffer with contents of tardis buffer
+            ["revision_picker"] = '<C-p>',  -- show fzf-lua picker to jump to any revision
         },
         initial_revisions = 10,             -- initial revisions to create buffers for
         max_revisions = 256,                -- max number of revisions to load

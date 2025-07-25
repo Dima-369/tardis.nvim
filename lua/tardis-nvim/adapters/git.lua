@@ -71,4 +71,26 @@ function M.get_revision_relative_time(revision, parent)
     return result[1] or ''
 end
 
+---@param parent TardisSession
+---@return table[]
+function M.get_revisions_with_details(parent)
+    local root = util.dirname(parent.path)
+    local file = get_git_file_path(parent.path)
+    local result = git(root, 'log', '-n', parent.parent.config.settings.max_revisions, 
+                      '--pretty=format:%h|%cr|%s', '--', file)
+    
+    local revisions = {}
+    for _, line in ipairs(result) do
+        local parts = vim.split(line, '|', { plain = true })
+        if #parts >= 3 then
+            table.insert(revisions, {
+                hash = parts[1],
+                relative_time = parts[2],
+                summary = parts[3]
+            })
+        end
+    end
+    return revisions
+end
+
 return M
