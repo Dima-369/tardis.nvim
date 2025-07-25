@@ -1,5 +1,3 @@
-.. image:: ./assets/tardis.webp
-
 Fork changes
 ============
 
@@ -10,6 +8,8 @@ Fork changes
 Original README
 ===============
 
+ .. image:: ./assets/tardis.webp
+ 
 Tardis allows you to travel in time (git history) scrolling through each
 revision of your current file.
 
