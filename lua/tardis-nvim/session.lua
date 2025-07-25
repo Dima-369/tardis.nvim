@@ -34,11 +34,12 @@ function M.Session:create_buffer(index)
     vim.api.nvim_buf_set_lines(fd, 0, -1, false, file_at_revision)
     vim.api.nvim_set_option_value('filetype', self.filetype, { buf = fd })
     vim.api.nvim_set_option_value('readonly', true, { buf = fd })
-    local relative_time = self.adapter.get_revision_relative_time and self.adapter.get_revision_relative_time(revision, self) or ''
+    local short_time = self.adapter.get_revision_relative_time_short and self.adapter.get_revision_relative_time_short(revision, self) or ''
     local total_revisions = #self.log
-    local buffer_name = relative_time ~= '' and 
-        string.format('%s [%d/%d] (%s - %s)', self.filename, index, total_revisions, revision, relative_time) or
-        string.format('%s [%d/%d] (%s)', self.filename, index, total_revisions, revision)
+    local filename = vim.fn.fnamemodify(self.filename, ':t') -- Get just the filename without path
+    local buffer_name = short_time ~= '' and 
+        string.format('%s, %s %d/%d %s', filename, revision, index, total_revisions, short_time) or
+        string.format('%s, %s %d/%d', filename, revision, index, total_revisions)
     vim.api.nvim_buf_set_name(fd, buffer_name)
 
     local keymap = self.parent.config.keymap

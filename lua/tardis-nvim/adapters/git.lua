@@ -71,6 +71,35 @@ function M.get_revision_relative_time(revision, parent)
     return result[1] or ''
 end
 
+---@param time_str string
+---@return string
+local function shorten_relative_time(time_str)
+    if not time_str or time_str == '' then
+        return ''
+    end
+    
+    -- Convert common time formats to shorter versions
+    local shortened = time_str
+        :gsub('(%d+) years? ago', '%1y')
+        :gsub('(%d+) months? ago', '%1mo')
+        :gsub('(%d+) weeks? ago', '%1w')
+        :gsub('(%d+) days? ago', '%1d')
+        :gsub('(%d+) hours? ago', '%1h')
+        :gsub('(%d+) minutes? ago', '%1m')
+        :gsub('(%d+) seconds? ago', '%1s')
+        :gsub(' ago', '')
+    
+    return shortened
+end
+
+---@param revision string
+---@param parent TardisSession
+---@return string
+function M.get_revision_relative_time_short(revision, parent)
+    local full_time = M.get_revision_relative_time(revision, parent)
+    return shorten_relative_time(full_time)
+end
+
 ---@param parent TardisSession
 ---@return table[]
 function M.get_revisions_with_details(parent)
