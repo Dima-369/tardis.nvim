@@ -155,9 +155,10 @@ function M.Session:show_revision_picker()
     
     -- Format entries for fzf
     local entries = {}
+    local total_revisions = #revisions
     
     for i, rev in ipairs(revisions) do
-        local entry = string.format("%-8s %-15s %s", rev.hash, rev.relative_time, rev.summary)
+        local entry = string.format("[%d/%d] %-8s %-15s %s", i, total_revisions, rev.hash, rev.relative_time, rev.summary)
         table.insert(entries, entry)
     end
     
