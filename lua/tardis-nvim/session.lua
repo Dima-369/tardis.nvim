@@ -243,7 +243,10 @@ function M.Session:init(parent, adapter_type)
     self.log = self.adapter.get_revisions_for_current_file(self)
 
     if vim.tbl_isempty(self.log) then
-        vim.notify('No previous revisions of this file were found', vim.log.levels.WARN)
+        -- Adapter should have provided a more specific reason; provide a generic fallback
+        vim.schedule(function()
+            vim.notify('No previous revisions of this file were found', vim.log.levels.WARN)
+        end)
         return
     end
 
