@@ -1,7 +1,7 @@
 Fork changes
 ============
 
-- buffer name now includes the git commits relative time to now
+- buffer name now includes the git commits relative time to now, as well as the index of changes like 1|12
 - revision message (``Ctrl-m``) is now nicely shown in a floating window
 - new revision picker (``Ctrl-c``) using fzf-lua to quickly jump to any revision
 
