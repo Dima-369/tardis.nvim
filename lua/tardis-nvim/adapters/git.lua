@@ -7,25 +7,33 @@ local M = {}
 ---@param ... string
 ---@return string[]
 local function git(root, ...)
-    root = Job:new{
+    -- Try to resolve git root; bail out if not a git repo
+    local rev = Job:new{
         command = 'git',
         args = { '-C', root, 'rev-parse', '--show-toplevel' },
-    }:sync()[1]
+    }:sync()
+    root = rev and rev[1]
+    if not root or root == '' then
+        return {}
+    end
     local output = Job:new{
         command = 'git',
         args = { '-C', root, ... },
         on_stderr = function(_, msg)
-            vim.print('Tardis: git failed: ' .. msg, vim.log.levels.WARN)
+            vim.schedule(function()
+                vim.notify('Tardis: git failed: ' .. msg, vim.log.levels.WARN)
+            end)
         end,
     }:sync()
-    return output
+    return output or {}
 end
 
 ---@param path string
 ---@return string
 local function get_git_file_path(path)
     local root = util.dirname(path)
-    return git(root, 'ls-files', '--full-name', path)[1]
+    local out = git(root, 'ls-files', '--full-name', path)
+    return out and out[1]
 end
 
 ---@param revision string
@@ -34,17 +42,23 @@ end
 function M.get_file_at_revision(revision, parent)
     local root = util.dirname(parent.path)
     local file = get_git_file_path(parent.path)
+    if not file or file == '' then
+        return { 'File is not tracked by git or outside a git repository.' }
+    end
     return git(root, 'show', string.format('%s:%s', revision, file))
 end
 
 ---@param parent TardisSession
 ---@return string
 function M.get_revision_under_cursor(parent)
-    local current_revision = parent:get_current_buffer().revision
+    local buf = parent:get_current_buffer()
+    if not buf then return '' end
+    local current_revision = buf.revision
     local root = util.dirname(parent.path)
     local line, _ = vim.api.nvim_win_get_cursor(0)
-    local blame_line = git(root, 'blame', '-L', line, current_revision)[1]
-    return vim.split(blame_line, ' ', {})[1]
+    local blame = git(root, 'blame', '-L', line, current_revision)
+    local blame_line = blame and blame[1] or ''
+    return (vim.split(blame_line, ' ', {})[1] or '')
 end
 
 ---@param parent TardisSession
@@ -52,6 +66,9 @@ end
 function M.get_revisions_for_current_file(parent)
     local root = util.dirname(parent.path)
     local file = get_git_file_path(parent.path)
+    if not file or file == '' then
+        return {}
+    end
     return git(root, 'log', '-n', parent.parent.config.settings.max_revisions, '--pretty=format:%h', '--', file)
 end
 
@@ -59,7 +76,8 @@ end
 ---@param parent TardisSession
 function M.get_revision_info(revision, parent)
     local root = util.dirname(parent.path)
-    return git(root, 'show', '--compact-summary', revision)
+    local out = git(root, 'show', '--compact-summary', revision)
+    return out or {}
 end
 
 ---@param revision string
@@ -68,7 +86,7 @@ end
 function M.get_revision_relative_time(revision, parent)
     local root = util.dirname(parent.path)
     local result = git(root, 'show', '--pretty=format:%cr', '--no-patch', revision)
-    return result[1] or ''
+    return (result and result[1]) or ''
 end
 
 ---@param time_str string
