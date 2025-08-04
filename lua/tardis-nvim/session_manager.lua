@@ -36,6 +36,10 @@ end
 ---@param session TardisSession
 function M.SessionManager:on_session_opened(session)
     self.sessions[session.filename] = session
+    local cb = self.config.callbacks and self.config.callbacks.on_open
+    if cb then
+        pcall(cb, session)
+    end
 end
 
 ---@param session TardisSession

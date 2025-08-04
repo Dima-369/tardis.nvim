@@ -9,10 +9,12 @@ local M = {}
 ---@class TardisConfig
 ---@field keymap TardisKeymap
 ---@field settings TardisSettings
+---@field callbacks { on_open: (fun(session: TardisSession))? }
 --
 ---@class TardisPartialConfig
 ---@field keymap? TardisKeymap
 ---@field settings? TardisSettings
+---@field callbacks? { on_open: (fun(session: TardisSession))? }
 
 ---@return TardisConfig
 local function get_default_config()
@@ -28,6 +30,9 @@ local function get_default_config()
         settings = {
             max_revisions = 256,
             initial_revisions = 10,
+        },
+        callbacks = {
+            on_open = nil,
         },
         debug = false,
     }
