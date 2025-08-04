@@ -19,10 +19,9 @@ local function git(root, ...)
     local output = Job:new{
         command = 'git',
         args = { '-C', root, ... },
-        on_stderr = function(_, msg)
-            vim.schedule(function()
-                vim.notify('Tardis: git failed: ' .. msg, vim.log.levels.WARN)
-            end)
+        -- Suppress stderr notifications to avoid noise; higher-level code will notify once
+        on_stderr = function(_, _)
+            -- no-op
         end,
     }:sync()
     return output or {}
@@ -36,14 +35,43 @@ local function get_git_file_path(path)
     return out and out[1]
 end
 
+-- Detect if we are inside a git repo (by resolving toplevel)
+local function is_git_repo(path)
+    local root = util.dirname(path)
+    local rev = Job:new{
+        command = 'git',
+        args = { '-C', root, 'rev-parse', '--show-toplevel' },
+    }:sync()
+    local toplevel = rev and rev[1]
+    return toplevel ~= nil and toplevel ~= ''
+end
+
+-- Detect if a file is ignored by git
+local function is_git_ignored(path)
+    local root = util.dirname(path)
+    local out = Job:new{
+        command = 'git',
+        args = { '-C', root, 'check-ignore', path },
+    }:sync()
+    -- If there is any output, the file is ignored
+    return out and #out > 0
+end
+
 ---@param revision string
 ---@param parent TardisSession
 ---@return string[]
 function M.get_file_at_revision(revision, parent)
-    local root = util.dirname(parent.path)
-    local file = get_git_file_path(parent.path)
+    local path = parent.path
+    if not is_git_repo(path) then
+        return { 'Not a git repository.' }
+    end
+    local root = util.dirname(path)
+    local file = get_git_file_path(path)
     if not file or file == '' then
-        return { 'File is not tracked by git or outside a git repository.' }
+        if is_git_ignored(path) then
+            return { 'File is ignored by git; no history.' }
+        end
+        return { 'File is not tracked by git; no history.' }
     end
     return git(root, 'show', string.format('%s:%s', revision, file))
 end
@@ -64,9 +92,20 @@ end
 ---@param parent TardisSession
 ---@return string[]
 function M.get_revisions_for_current_file(parent)
-    local root = util.dirname(parent.path)
-    local file = get_git_file_path(parent.path)
+    local path = parent.path
+    if not is_git_repo(path) then
+        vim.notify('Tardis: Not a git repository. No history for this file.', vim.log.levels.WARN)
+        return {}
+    end
+    local root = util.dirname(path)
+    local file = get_git_file_path(path)
     if not file or file == '' then
+        -- Distinguish ignored vs untracked
+        if is_git_ignored(path) then
+            vim.notify('Tardis: File is ignored by git; no history.', vim.log.levels.WARN)
+        else
+            vim.notify('Tardis: File is not tracked by git; no history.', vim.log.levels.WARN)
+        end
         return {}
     end
     return git(root, 'log', '-n', parent.parent.config.settings.max_revisions, '--pretty=format:%h', '--', file)
