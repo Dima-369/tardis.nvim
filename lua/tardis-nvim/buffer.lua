@@ -18,7 +18,9 @@ end
 function M.Buffer:focus()
     local current_pos = vim.api.nvim_win_get_cursor(0)
     local target_line_count = vim.api.nvim_buf_line_count(self.fd)
-    if current_pos[1] >= target_line_count then
+    if target_line_count == 0 then
+        current_pos[1] = 1
+    elseif current_pos[1] > target_line_count then
         current_pos[1] = target_line_count
     end
     vim.api.nvim_win_set_buf(0, self.fd)
